@@ -3,6 +3,7 @@
 
 #include "PawnBase.h"
 #include "Components/CapsuleComponent.h"
+#include "ToonTanks/Actors/ProjectileBase.h"
 
 // Sets default values
 APawnBase::APawnBase()
@@ -23,24 +24,37 @@ APawnBase::APawnBase()
 	ProjectileSpawnPoint->SetupAttachment(TurretMesh);
 }
 
-// Called when the game starts or when spawned
-void APawnBase::BeginPlay()
+void APawnBase::RotateTurret(FVector LookAtTarget) 
 {
-	Super::BeginPlay();
-	
+	//Update TurretMesh rotation to face towards the LookAtTarget passed in from Child classes.
+	//TurretMesh->SetWorldRotation().......
+	FVector LookAtTargetCleaned = FVector(LookAtTarget.X, LookAtTarget.Y, TurretMesh->GetComponentLocation().Z);
+	FVector StartLocation = TurretMesh->GetComponentLocation();
+
+	FRotator TurretRotation = FVector(LookAtTargetCleaned - StartLocation).Rotation();
+	TurretMesh->SetWorldRotation(TurretRotation);
 }
 
-// Called every frame
-void APawnBase::Tick(float DeltaTime)
+void APawnBase::Fire() 
 {
-	Super::Tick(DeltaTime);
+	//Get ProjectileSpawnPoint Location && Rotation -> Spawn Projectile class at Location firing towards Rotation.
+	if (ProjectileClass)
+	{
+		FVector SpawnLocation = ProjectileSpawnPoint->GetComponentLocation();
+		FRotator SpawnRotation = ProjectileSpawnPoint->GetComponentRotation();
 
+		AProjectileBase* TempProjectile = GetWorld()->SpawnActor<AProjectileBase>(ProjectileClass, SpawnLocation, SpawnRotation);
+		TempProjectile->SetOwner(this);
+	}
 }
 
-// Called to bind functionality to input
-void APawnBase::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void APawnBase::HandleDestruction() 
 {
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
+	// ---Universal functionality---
+	//Play death effects particle, sound and camera shake
 
+	// ----Then do Child overrides ---
+	// ---PawnTurret - Inform GameMode Turret died -> Then Destroy self.
+
+	// ---PawnTank - Inform GameMode Player died -> Then Hide() all components && stop movement input.
 }
-
